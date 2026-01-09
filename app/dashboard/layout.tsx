@@ -70,7 +70,7 @@ export default function DashboardLayout({
                   觀點文章
                 </button>
                 <button
-                  onClick={() => router.push('/dashboard/upload/image')}
+                  onClick={() => router.push('/dashboard/upload/photograph')}
                   className="w-full flex items-center gap-3 px-4 py-2 text-base text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">

@@ -13,9 +13,21 @@ interface Article {
   updatedAt: string
 }
 
+interface Photograph {
+  id: string
+  title: string
+  author: string
+  description: string
+  photoDate: string
+  createdAt: string
+  updatedAt: string
+}
+
+type ContentItem = (Article | Photograph) & { type: 'article' | 'photograph' }
+
 export default function DashboardPage() {
   const router = useRouter()
-  const [articles, setArticles] = useState<Article[]>([])
+  const [contents, setContents] = useState<ContentItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -31,22 +43,46 @@ export default function DashboardPage() {
         console.error('Failed to parse user data:', err)
       }
     }
-    fetchArticles()
+    fetchContents()
   }, [])
 
-  const fetchArticles = async () => {
+  const fetchContents = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/articles')
-      const result = await response.json()
       
-      if (result.success) {
-        setArticles(result.data)
-      } else {
-        setError('Failed to load articles')
+      // 並行獲取文章和照片
+      const [articlesResponse, photographsResponse] = await Promise.all([
+        fetch('/api/articles'),
+        fetch('/api/photographs')
+      ])
+
+      const articlesResult = await articlesResponse.json()
+      const photographsResult = await photographsResponse.json()
+      
+      const allContents: ContentItem[] = []
+      
+      if (articlesResult.success) {
+        allContents.push(...articlesResult.data.map((article: Article) => ({
+          ...article,
+          type: 'article' as const
+        })))
       }
+      
+      if (photographsResult.success) {
+        allContents.push(...photographsResult.data.map((photo: Photograph) => ({
+          ...photo,
+          type: 'photograph' as const
+        })))
+      }
+      
+      // 按更新時間排序（最新的在前）
+      allContents.sort((a, b) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+      
+      setContents(allContents)
     } catch (err) {
-      setError('An error occurred while fetching articles')
+      setError('載入內容時發生錯誤')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -80,8 +116,35 @@ export default function DashboardPage() {
 
       if (result.success) {
         alert('文章已成功刪除')
-        // 重新載入文章列表
-        fetchArticles()
+        fetchContents()
+      } else {
+        alert('刪除失敗：' + (result.error || '未知錯誤'))
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+      alert('刪除失敗：' + (err instanceof Error ? err.message : '未知錯誤'))
+    }
+  }
+
+  const deletePhotograph = async (photographId: string, photographTitle: string) => {
+    if (!confirm(`確定要刪除照片「${photographTitle}」嗎？此操作無法復原。`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/photographs/${photographId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('照片已成功刪除')
+        fetchContents()
       } else {
         alert('刪除失敗：' + (result.error || '未知錯誤'))
       }
@@ -108,9 +171,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-center py-12">
             <div className="text-gray-500">載入中...</div>
           </div>
-        ) : articles.length === 0 ? (
+        ) : contents.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">尚無文章</p>
+            <p className="text-gray-500">尚無內容</p>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -127,7 +190,7 @@ export default function DashboardPage() {
                     作者
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    發布日期
+                    日期
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     最後更新
@@ -138,41 +201,78 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {articles.map((article) => (
-                  <tr key={article.id} className="hover:bg-gray-50">
+                {contents.map((item) => (
+                  <tr key={`${item.type}-${item.id}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        觀點文章
-                      </span>
+                      {item.type === 'article' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          觀點文章
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          光影故事
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{article.title}</div>
-                      <div className="text-sm text-gray-500">{article.slug}</div>
+                      <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                      {item.type === 'article' && (
+                        <div className="text-sm text-gray-500">{(item as Article).slug}</div>
+                      )}
+                      {item.type === 'photograph' && (
+                        <div className="text-sm text-gray-500">{(item as Photograph).description}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{article.author}</div>
+                      <div className="text-sm text-gray-900">{item.author}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDate(article.publishedAt)}</div>
+                      <div className="text-sm text-gray-900">
+                        {item.type === 'article' 
+                          ? formatDate((item as Article).publishedAt)
+                          : formatDate((item as Photograph).photoDate)
+                        }
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDate(article.updatedAt)}</div>
+                      <div className="text-sm text-gray-900">{formatDate(item.updatedAt)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => router.push(`/dashboard/update/article/${article.id}`)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          更新
-                        </button>
-                        {userRole === 'admin' && (
-                          <button
-                            onClick={() => deleteArticle(article.id, article.title)}
-                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                          >
-                            刪除
-                          </button>
+                        {item.type === 'article' ? (
+                          <>
+                            <button
+                              onClick={() => router.push(`/dashboard/update/article/${item.id}`)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              更新
+                            </button>
+                            {userRole === 'admin' && (
+                              <button
+                                onClick={() => deleteArticle(item.id, item.title)}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                              >
+                                刪除
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => router.push(`/dashboard/update/photograph/${item.id}`)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              更新
+                            </button>
+                            {userRole === 'admin' && (
+                              <button
+                                onClick={() => deletePhotograph(item.id, item.title)}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                              >
+                                刪除
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
