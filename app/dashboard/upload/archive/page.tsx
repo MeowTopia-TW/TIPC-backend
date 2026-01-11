@@ -183,7 +183,7 @@ export default function ArchiveUploadPage() {
               disabled={isSubmitting}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {isSubmitting ? '上傳中...' : '上傳檔案索引'}
+              {isSubmitting ? '上傳中...' : '上傳典藏索引'}
             </button>
           </div>
         </form>
