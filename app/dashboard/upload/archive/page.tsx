@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 export default function ArchiveUploadPage() {
   const router = useRouter()
   
-  // 檔案索引資訊
+  // 典藏索引資訊
   const [classValue, setClassValue] = useState('')
   const [webName, setWebName] = useState('')
   const [orgName, setOrgName] = useState('')
@@ -58,7 +58,7 @@ export default function ArchiveUploadPage() {
       const result = await response.json()
 
       if (result.success) {
-        alert('檔案索引上傳成功！')
+        alert('典藏索引上傳成功！')
         router.push('/dashboard')
       } else {
         alert('典藏索引上傳失敗：' + result.error)

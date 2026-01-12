@@ -117,7 +117,7 @@ export default function DashboardPage() {
     try {
       setIsLoading(true)
       
-      // 並行獲取文章、照片、影片、檔案索引、夥伴、書籍、影響力精選和活動
+      // 並行獲取文章、照片、影片、典藏索引、夥伴、書籍、影響力精選和活動
       const [articlesResponse, photographsResponse, videosResponse, archivesResponse, partnersResponse, booksResponse, eventsResponse, selectionsResponse] = await Promise.all([
         fetch('/api/articles'),
         fetch('/api/photographs'),
@@ -420,7 +420,7 @@ export default function DashboardPage() {
   }
 
   const deleteArchive = async (archiveId: number, archiveName: string) => {
-    if (!confirm(`確定要刪除檔案索引「${archiveName}」嗎？此操作無法復原。`)) {
+    if (!confirm(`確定要刪除典藏索引「${archiveName}」嗎？此操作無法復原。`)) {
       return
     }
 
@@ -436,7 +436,7 @@ export default function DashboardPage() {
       const result = await response.json()
 
       if (result.success) {
-        alert('檔案索引已成功刪除')
+        alert('典藏索引已成功刪除')
         fetchContents()
       } else {
         alert('刪除失敗：' + (result.error || '未知錯誤'))

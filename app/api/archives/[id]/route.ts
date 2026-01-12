@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 /**
  * GET /api/archives/[id]
- * 獲取單一檔案索引詳情
+ * 獲取單一典藏索引詳情
  */
 export async function GET(
   request: Request,
@@ -17,7 +17,7 @@ export async function GET(
 
     if (!archive) {
       return NextResponse.json(
-        { success: false, error: '檔案索引不存在' },
+        { success: false, error: '典藏索引不存在' },
         { status: 404 }
       )
     }
@@ -31,7 +31,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '檔案索引獲取失敗',
+        error: error instanceof Error ? error.message : '典藏索引獲取失敗',
       },
       { status: 500 }
     )
@@ -40,7 +40,7 @@ export async function GET(
 
 /**
  * DELETE /api/archives/[id]
- * 刪除檔案索引
+ * 刪除典藏索引
  */
 export async function DELETE(
   request: Request,
@@ -48,33 +48,33 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    // 檢查檔案索引是否存在
+    // 檢查典藏索引是否存在
     const archive = await prisma.archiveIndex.findUnique({
       where: { id: parseInt(id) },
     })
 
     if (!archive) {
       return NextResponse.json(
-        { success: false, error: '檔案索引不存在' },
+        { success: false, error: '典藏索引不存在' },
         { status: 404 }
       )
     }
 
-    // 刪除檔案索引
+    // 刪除典藏索引
     await prisma.archiveIndex.delete({
       where: { id: parseInt(id) },
     })
 
     return NextResponse.json({
       success: true,
-      message: '檔案索引已成功刪除',
+      message: '典藏索引已成功刪除',
     })
   } catch (error) {
     console.error('Archive deletion error:', error)
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '檔案索引刪除失敗',
+        error: error instanceof Error ? error.message : '典藏索引刪除失敗',
       },
       { status: 500 }
     )
@@ -83,7 +83,7 @@ export async function DELETE(
 
 /**
  * PUT /api/archives/[id]
- * 更新檔案索引
+ * 更新典藏索引
  */
 export async function PUT(
   request: Request,
@@ -107,19 +107,19 @@ export async function PUT(
       )
     }
 
-    // 檢查檔案索引是否存在
+    // 檢查典藏索引是否存在
     const existingArchive = await prisma.archiveIndex.findUnique({
       where: { id: parseInt(id) },
     })
 
     if (!existingArchive) {
       return NextResponse.json(
-        { success: false, error: '檔案索引不存在' },
+        { success: false, error: '典藏索引不存在' },
         { status: 404 }
       )
     }
 
-    // 更新檔案索引
+    // 更新典藏索引
     const archive = await prisma.archiveIndex.update({
       where: { id: parseInt(id) },
       data: {
@@ -139,7 +139,7 @@ export async function PUT(
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '檔案索引更新失敗',
+        error: error instanceof Error ? error.message : '典藏索引更新失敗',
       },
       { status: 500 }
     )

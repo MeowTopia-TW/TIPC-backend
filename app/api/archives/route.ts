@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 /**
  * POST /api/archives
- * 建立新檔案索引
+ * 建立新典藏索引
  */
 export async function POST(request: Request) {
   try {
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // 建立檔案索引
+    // 建立典藏索引
     const archive = await prisma.archiveIndex.create({
       data: {
         Class: classValue,
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '檔案索引建立失敗',
+        error: error instanceof Error ? error.message : '典藏索引建立失敗',
       },
       { status: 500 }
     )
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/archives
- * 獲取所有檔案索引
+ * 獲取所有典藏索引
  */
 export async function GET(request: Request) {
   try {
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '檔案索引獲取失敗',
+        error: error instanceof Error ? error.message : '典藏索引獲取失敗',
       },
       { status: 500 }
     )
