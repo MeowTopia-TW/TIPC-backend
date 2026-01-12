@@ -73,9 +73,17 @@ interface Event {
   updatedAt: string
 }
 
+interface Selection {
+  id: string
+  title: string
+  author: string
+  slug: string
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
 
-
-type ContentItem = (Article | Photograph | Video | Archive | Partner | Book | Event) & { type: 'article' | 'photograph' | 'video' | 'archive' | 'partner' | 'book' | 'event' }
+type ContentItem = (Article | Photograph | Video | Archive | Partner | Book | Event | Selection) & { type: 'article' | 'photograph' | 'video' | 'archive' | 'partner' | 'book' | 'event' | 'selection' }
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -109,15 +117,16 @@ export default function DashboardPage() {
     try {
       setIsLoading(true)
       
-      // 並行獲取文章、照片、影片、檔案索引、夥伴、書籍和活動
-      const [articlesResponse, photographsResponse, videosResponse, archivesResponse, partnersResponse, booksResponse, eventsResponse] = await Promise.all([
+      // 並行獲取文章、照片、影片、檔案索引、夥伴、書籍、影響力精選和活動
+      const [articlesResponse, photographsResponse, videosResponse, archivesResponse, partnersResponse, booksResponse, eventsResponse, selectionsResponse] = await Promise.all([
         fetch('/api/articles'),
         fetch('/api/photographs'),
         fetch('/api/videos'),
         fetch('/api/archives'),
         fetch('/api/partners'),
         fetch('/api/books'),
-        fetch('/api/events')
+        fetch('/api/events'),
+        fetch('/api/selections')
       ])
 
       const articlesResult = await articlesResponse.json()
@@ -127,6 +136,7 @@ export default function DashboardPage() {
       const partnersResult = await partnersResponse.json()
       const booksResult = await booksResponse.json()
       const eventsResult = await eventsResponse.json()
+      const selectionsResult = await selectionsResponse.json()
       
       const allContents: ContentItem[] = []
       
@@ -134,6 +144,13 @@ export default function DashboardPage() {
         allContents.push(...articlesResult.data.map((article: Article) => ({
           ...article,
           type: 'article' as const
+        })))
+      }
+
+      if ( selectionsResult.success) {
+        allContents.push(...selectionsResult.data.map((selection: Selection) => ({
+          ...selection,
+          type: 'selection' as const
         })))
       }
       
@@ -220,7 +237,7 @@ export default function DashboardPage() {
           ? (item as Partner).name.toLowerCase()
           : item.type === 'book'
           ? (item as Book).bookname.toLowerCase()
-          : (item as Article | Photograph | Video | Event).title.toLowerCase()
+          : (item as Article | Photograph | Video | Event | Selection).title.toLowerCase()
         
         return title.includes(searchTitle.toLowerCase())
       })
@@ -237,7 +254,7 @@ export default function DashboardPage() {
             author.toLowerCase().includes(searchAuthor.toLowerCase())
           )
         }
-        return (item as Article | Photograph | Video).author.toLowerCase().includes(searchAuthor.toLowerCase())
+        return (item as Article | Photograph | Video | Selection).author.toLowerCase().includes(searchAuthor.toLowerCase())
       })
     }
 
@@ -253,6 +270,8 @@ export default function DashboardPage() {
         dateA = new Date((a as Video).videoDate)
       } else if (a.type === 'event') {
         dateA = new Date((a as Event).eventDate)
+      } else if (a.type === 'selection') {
+        dateA = new Date((a as Selection).publishedAt || (a as Selection).updatedAt || 0)
       } else {
         dateA = a.updatedAt ? new Date(a.updatedAt) : new Date(0)
       }
@@ -265,6 +284,8 @@ export default function DashboardPage() {
         dateB = new Date((b as Video).videoDate)
       } else if (b.type === 'event') {
         dateB = new Date((b as Event).eventDate)
+      } else if (b.type === 'selection') {
+        dateB = new Date((b as Selection).publishedAt || (b as Selection).updatedAt || 0)
       } else {
         dateB = b.updatedAt ? new Date(b.updatedAt) : new Date(0)
       }
@@ -304,6 +325,34 @@ export default function DashboardPage() {
 
       if (result.success) {
         alert('文章已成功刪除')
+        fetchContents()
+      } else {
+        alert('刪除失敗：' + (result.error || '未知錯誤'))
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+      alert('刪除失敗：' + (err instanceof Error ? err.message : '未知錯誤'))
+    }
+  }
+
+  const deleteSelection = async (selectionId: string, selectionTitle: string) => {
+    if (!confirm(`確定要刪除「${selectionTitle}」嗎？此操作無法復原。`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/selections/${selectionId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+
+      if (result.success) {
+        alert('已成功刪除')
         fetchContents()
       } else {
         alert('刪除失敗：' + (result.error || '未知錯誤'))
@@ -628,11 +677,15 @@ export default function DashboardPage() {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                           TIPC選書
                         </span>
-                      ) : (
+                      ) : item.type === 'selection' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          影響力精選
+                        </span>
+                      ) : item.type === 'event' ?(
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                           活動探索
                         </span>
-                      )}
+                      ) : null}
                     </td>
                     <td className="px-6 py-4">
                       {item.type === 'archive' ? (
@@ -692,7 +745,25 @@ export default function DashboardPage() {
                               </button>
                             )}
                           </>
-                        ) : item.type === 'photograph' ? (
+                        )  : item.type === 'selection' ? (
+                          <>
+                            <button
+                              onClick={() => router.push(`/dashboard/update/selection/${item.id}`)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              更新
+                            </button>
+                            {userRole === 'admin' && (
+                              <button
+                                onClick={() => deleteSelection(String(item.id), (item as Selection).title)}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                              >
+                                刪除
+                              </button>
+                            )}
+                          </>
+                        ) 
+                        : item.type === 'photograph' ? (
                           <>
                             <button
                               onClick={() => router.push(`/dashboard/update/photograph/${item.id}`)}
