@@ -297,6 +297,9 @@ model Selection {
   englishTitle  String?
   title       String
   author      String
+  url         String            // 連結
+  nation      String            // 國家
+  date                  DateTime              // 新聞日期
   coverImage  String             // 封面照片 URL (required)
   keyWords    SelectionKeyWord[]
   slug        String             @unique

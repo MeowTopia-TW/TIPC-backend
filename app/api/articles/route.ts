@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     
     console.log('Received body:', JSON.stringify(body, null, 2))
     
-    // 🔥 完整驗證（包含 Zod + Reference 完整性檢查）
+    // 完整驗證（包含 Zod + Reference 完整性檢查）
     // 如果驗證失敗，會直接拋出錯誤
     const validatedData = assertValidCreateArticle(body)
     

@@ -35,11 +35,14 @@ export default function UpdateSelectionPage() {
   const selectionId = params.id as string
   const [isLoadingSelection, setIsLoadingSelection] = useState(true)
   const [allKeywords, setAllKeywords] = useState<Keyword[]>([])
-  
+
   // 文章基本資訊
   const [title, setTitle] = useState('')
   const [englishTitle, setEnglishTitle] = useState('')
   const [author, setAuthor] = useState('')
+  const [url, setUrl] = useState('')
+  const [date, setSelectionDate] = useState('')
+  const [nation, setNation] = useState('')
   const [slug, setSlug] = useState('')
   const [coverImage, setCoverImage] = useState('') // 封面照片
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
@@ -48,22 +51,22 @@ export default function UpdateSelectionPage() {
   const [keywordSuggestions, setKeywordSuggestions] = useState<Keyword[]>([]) // 自動完成建議
   const [showSuggestions, setShowSuggestions] = useState(false) // 顯示建議框
   const [isSearchingKeywords, setIsSearchingKeywords] = useState(false) // 搜索中
-  
+
   // 元數據選項
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true)
-  
+
   // Blocks
   const [blocks, setBlocks] = useState<Block[]>([])
   const [draggedBlockIndex, setDraggedBlockIndex] = useState<number | null>(null)
-  
+
   // Annotations
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [nextAnnotationId, setNextAnnotationId] = useState(1)
-  
+
   // Videos & Podcasts
   const [videos, setVideos] = useState<Video[]>([])
   const [podcasts, setPodcasts] = useState<Podcast[]>([])
-  
+
   // UI State
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
@@ -96,17 +99,20 @@ export default function UpdateSelectionPage() {
         setIsLoadingSelection(true)
         const response = await fetch(`/api/selections/${selectionId}`)
         const result = await response.json()
-        
+
         if (result.success && result.data) {
           const selection = result.data
-          
+
           // 填充基本資訊
           setTitle(selection.title || '')
           setEnglishTitle(selection.englishTitle || '')
           setAuthor(selection.author || '')
           setSlug(selection.slug || '')
           setCoverImage(selection.coverImage || '')
-          
+          setUrl(selection.url || '')
+          setSelectionDate(selection.date || '')
+          setNation(selection.nation || '')
+
           // 填充 blocks
           if (selection.blocks && selection.blocks.length > 0) {
             const formattedBlocks = selection.blocks.map((block: any) => ({
@@ -117,7 +123,7 @@ export default function UpdateSelectionPage() {
             }))
             setBlocks(formattedBlocks)
           }
-          
+
           // 填充 annotations
           if (selection.annotations && selection.annotations.length > 0) {
             const formattedAnnotations = selection.annotations.map((ann: any) => ({
@@ -129,17 +135,17 @@ export default function UpdateSelectionPage() {
             const maxId = Math.max(...formattedAnnotations.map((a: any) => a.id))
             setNextAnnotationId(maxId + 1)
           }
-          
+
           // 填充 videos
           if (selection.videos && selection.videos.length > 0) {
             setVideos(selection.videos.map((v: any) => ({ url: v.url })))
           }
-          
+
           // 填充 podcasts
           if (selection.podcasts && selection.podcasts.length > 0) {
             setPodcasts(selection.podcasts.map((p: any) => ({ url: p.url })))
           }
-          
+
           // 填充關鍵字
           if (selection.keyWords && selection.keyWords.length > 0) {
             const keywordIds = selection.keyWords.map((kw: any) => kw.keyWord.id)
@@ -166,11 +172,11 @@ export default function UpdateSelectionPage() {
     const newBlock: Block = {
       id: `block-${Date.now()}`,
       type,
-      data: type === 'text' 
+      data: type === 'text'
         ? { content: '' }
         : type === 'image'
-        ? { url: '', alt: '', caption: '' }
-        : { content: '', author: '', source: '' },
+          ? { url: '', alt: '', caption: '' }
+          : { content: '', author: '', source: '' },
       position: blocks.length,
     }
     setBlocks([...blocks, newBlock])
@@ -183,12 +189,12 @@ export default function UpdateSelectionPage() {
       setShowSuggestions(false)
       return
     }
-    
+
     setIsSearchingKeywords(true)
     try {
       const response = await fetch(`/api/keywords/search?q=${encodeURIComponent(query)}`)
       const result = await response.json()
-      
+
       if (result.success) {
         // 過濾掉已選擇的關鍵字
         const filteredSuggestions = result.data.filter(
@@ -261,8 +267,8 @@ export default function UpdateSelectionPage() {
       const result = await response.json()
 
       if (result.success && result.url) {
-        updateBlock(index, { 
-          ...blocks[index].data, 
+        updateBlock(index, {
+          ...blocks[index].data,
           url: result.url,
           publicId: result.publicId,
           width: result.width,
@@ -341,12 +347,12 @@ export default function UpdateSelectionPage() {
     const draggedBlock = newBlocks[draggedBlockIndex]
     newBlocks.splice(draggedBlockIndex, 1)
     newBlocks.splice(index, 0, draggedBlock)
-    
+
     // 重新排序 position
     newBlocks.forEach((block, i) => {
       block.position = i
     })
-    
+
     setBlocks(newBlocks)
     setDraggedBlockIndex(index)
   }
@@ -394,14 +400,14 @@ export default function UpdateSelectionPage() {
   const insertReference = (blockIndex: number, annotationId: number, field?: 'caption') => {
     const block = blocks[blockIndex]
     const reference = `[${annotationId}]`
-    
+
     if (block.type === 'text') {
       const content = block.data.content || ''
       const cursorPos = cursorPositions[block.id] ?? content.length
       const newContent = content.slice(0, cursorPos) + reference + content.slice(cursorPos)
       block.data.content = newContent
       setBlocks([...blocks])
-      
+
       // 更新鼠標位置到引用後面
       setCursorPositions({
         ...cursorPositions,
@@ -414,7 +420,7 @@ export default function UpdateSelectionPage() {
       const newCaption = caption.slice(0, cursorPos) + reference + caption.slice(cursorPos)
       block.data.caption = newCaption
       setBlocks([...blocks])
-      
+
       setCursorPositions({
         ...cursorPositions,
         [cursorKey]: cursorPos + reference.length
@@ -425,7 +431,7 @@ export default function UpdateSelectionPage() {
       const newContent = content.slice(0, cursorPos) + reference + content.slice(cursorPos)
       block.data.content = newContent
       setBlocks([...blocks])
-      
+
       setCursorPositions({
         ...cursorPositions,
         [block.id]: cursorPos + reference.length
@@ -465,7 +471,7 @@ export default function UpdateSelectionPage() {
 
     try {
       console.log('Selected keywords:', selectedKeywords)
-      
+
       const articleData = {
         author,
         title,
@@ -492,7 +498,7 @@ export default function UpdateSelectionPage() {
 
       console.log('Response status:', response.status)
       console.log('Response ok:', response.ok)
-      
+
       let result
       try {
         result = await response.json()
@@ -572,7 +578,7 @@ export default function UpdateSelectionPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 min-h-[120px]"
                 placeholder="輸入文章標題"
-                />
+              />
             </div>
 
             <div>
@@ -582,9 +588,9 @@ export default function UpdateSelectionPage() {
                 onChange={(e) => setEnglishTitle(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 min-h-[120px]"
                 placeholder="Enter selection title in English"
-                />
+              />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">作者 *</label>
@@ -596,7 +602,7 @@ export default function UpdateSelectionPage() {
                   placeholder="作者名稱"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   URL Slug * <span className="text-xs text-gray-500 font-normal">（例如：my-selection-title）</span>
@@ -610,11 +616,47 @@ export default function UpdateSelectionPage() {
                 />
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                網址 *
+              </label>
+              <input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                placeholder="輸入影響力精選網址"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                國家 *
+              </label>
+              <input
+                value={nation}
+                onChange={(e) => setNation(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                placeholder="輸入國家"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                日期 *
+              </label>
+              <input
+                value={date}
+                type='date'
+                onChange={(e) => setSelectionDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                placeholder="輸入日期"
+              />
+            </div>
 
             {/* 封面照片 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">封面照片 *</label>
-              
+
               {/* Hidden file input */}
               <input
                 type="file"
@@ -629,16 +671,15 @@ export default function UpdateSelectionPage() {
                 className="hidden"
                 disabled={uploadingCoverImage}
               />
-              
+
               {/* Three-state UI */}
               {!coverImage ? (
                 <label
                   htmlFor="cover-image-upload"
-                  className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                    uploadingCoverImage
+                  className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${uploadingCoverImage
                       ? 'bg-blue-50 border-blue-400'
                       : 'bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
-                  }`}
+                    }`}
                 >
                   {uploadingCoverImage ? (
                     <>
@@ -698,7 +739,7 @@ export default function UpdateSelectionPage() {
                   </span>
                 )}
               </label>
-              
+
               {/* 新增關鍵字輸入框 */}
               <div className="relative mb-3">
                 <div className="flex gap-2">
@@ -739,7 +780,7 @@ export default function UpdateSelectionPage() {
                     新增
                   </button>
                 </div>
-                
+
                 {/* 自動完成建議框 */}
                 {showSuggestions && keywordSuggestions.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -812,7 +853,7 @@ export default function UpdateSelectionPage() {
                 </div>
               )}
 
-             
+
             </div>
           </div>
         </div>
@@ -856,9 +897,8 @@ export default function UpdateSelectionPage() {
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`border border-gray-300 rounded-lg p-4 bg-gray-50 cursor-move hover:border-blue-400 ${
-                    draggedBlockIndex === index ? 'opacity-50' : ''
-                  }`}
+                  className={`border border-gray-300 rounded-lg p-4 bg-gray-50 cursor-move hover:border-blue-400 ${draggedBlockIndex === index ? 'opacity-50' : ''
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -924,7 +964,7 @@ export default function UpdateSelectionPage() {
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">圖片</label>
-                        
+
                         {/* 上傳按鈕區域 */}
                         <div className="relative">
                           <input
@@ -940,15 +980,14 @@ export default function UpdateSelectionPage() {
                             className="hidden"
                             disabled={uploadingImages.has(block.id)}
                           />
-                          
+
                           {!block.data.url ? (
                             <label
                               htmlFor={`image-upload-${block.id}`}
-                              className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-                                uploadingImages.has(block.id)
+                              className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-all ${uploadingImages.has(block.id)
                                   ? 'border-blue-400 bg-blue-50'
                                   : 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-blue-400'
-                              }`}
+                                }`}
                             >
                               <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                 {uploadingImages.has(block.id) ? (
@@ -974,10 +1013,10 @@ export default function UpdateSelectionPage() {
                             </label>
                           ) : (
                             <div className="relative group">
-                              <img 
-                                src={block.data.url} 
-                                alt="預覽" 
-                                className="w-full max-h-64 object-contain rounded-lg border border-gray-300" 
+                              <img
+                                src={block.data.url}
+                                alt="預覽"
+                                className="w-full max-h-64 object-contain rounded-lg border border-gray-300"
                               />
                               <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-lg flex items-center justify-center">
                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
@@ -996,7 +1035,7 @@ export default function UpdateSelectionPage() {
                                   </button>
                                 </div>
                               </div>
-                              
+
                             </div>
                           )}
                         </div>
@@ -1102,7 +1141,7 @@ export default function UpdateSelectionPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        
+
                       </div>
                     </div>
                   )}
@@ -1110,7 +1149,7 @@ export default function UpdateSelectionPage() {
               ))}
             </div>
           )}
-          
+
           {/* 底部新增按鈕 - 在區塊列表下方也顯示 */}
           {blocks.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-200 flex justify-center gap-2">
@@ -1199,7 +1238,7 @@ export default function UpdateSelectionPage() {
               })}
             </div>
           )}
-          
+
           {/* 底部新增註解按鈕 */}
           {annotations.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-200 flex justify-center">
@@ -1243,7 +1282,7 @@ export default function UpdateSelectionPage() {
                     className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
                     placeholder="影片 URL"
                   />
-                 
+
                   <button
                     onClick={() => setVideos(videos.filter((_, i) => i !== index))}
                     className="text-red-600 text-xs hover:text-red-800"
@@ -1283,7 +1322,7 @@ export default function UpdateSelectionPage() {
                     className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-gray-900"
                     placeholder="Podcast URL"
                   />
-                
+
                   <button
                     onClick={() => setPodcasts(podcasts.filter((_, i) => i !== index))}
                     className="text-red-600 text-xs hover:text-red-800"
