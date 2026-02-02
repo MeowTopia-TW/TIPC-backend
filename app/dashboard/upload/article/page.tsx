@@ -538,7 +538,7 @@ export default function ArticleEditorPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL Slug * <span className="text-xs text-gray-500 font-normal">（例如：my-article-title）</span>
+                  URL Slug * <span className="text-s text-gray-500 font-normal">（例如：my-article-title）可以把英文標題轉成URL的格式</span>
                 </label>
                 <input
                   type="text"
@@ -707,7 +707,7 @@ export default function ArticleEditorPage() {
             {/* 關鍵字（多選） */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                關鍵字 * <span className="text-xs text-gray-500 font-normal">（最多 6 項）</span>
+                關鍵字 * <span className="text-s text-red-500 font-normal">（最多 6 項） 請將想顯示在最前面的關鍵字最後再新增 像是蛋糕圖分類</span>
                 {(selectedKeywords.length + newKeywords.length) > 0 && (
                   <span className={`ml-2 ${selectedKeywords.length + newKeywords.length >= 6 ? 'text-red-600' : 'text-gray-600'}`}>
                     已選 {selectedKeywords.length + newKeywords.length}/6 項

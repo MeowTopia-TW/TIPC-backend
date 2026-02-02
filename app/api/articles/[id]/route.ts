@@ -84,38 +84,60 @@ export async function PATCH(
       )
     }
 
-    // 使用 transaction 更新文章
+    // 使用 transaction 更新文章（增加 timeout 到 15 秒）
     const updatedArticle = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. 刪除舊的關聯資料
-      await tx.articleBlock.deleteMany({ where: { articleId: id } })
-      await tx.articleAnnotation.deleteMany({ where: { articleId: id } })
-      await tx.articleVideo.deleteMany({ where: { articleId: id } })
-      await tx.articlePodcast.deleteMany({ where: { articleId: id } })
-      await tx.articleKeyWord.deleteMany({ where: { articleId: id } })
-      await tx.articleNineBlock.deleteMany({ where: { articleId: id } })
-      await tx.articleCakeCategory.deleteMany({ where: { articleId: id } })
+      // 1. 刪除舊的關聯資料（並行執行以提升效率）
+      await Promise.all([
+        tx.articleBlock.deleteMany({ where: { articleId: id } }),
+        tx.articleAnnotation.deleteMany({ where: { articleId: id } }),
+        tx.articleVideo.deleteMany({ where: { articleId: id } }),
+        tx.articlePodcast.deleteMany({ where: { articleId: id } }),
+        tx.articleKeyWord.deleteMany({ where: { articleId: id } }),
+        tx.articleNineBlock.deleteMany({ where: { articleId: id } }),
+        tx.articleCakeCategory.deleteMany({ where: { articleId: id } }),
+      ])
 
-      // 2. 處理新增的關鍵字
+      // 2. 處理新增的關鍵字（批次查詢優化）
       let allKeywordIds = [...(body.keywordIds || [])]
       if (body.newKeywords && body.newKeywords.length > 0) {
-        for (const keywordName of body.newKeywords) {
-          const normalized = keywordName.trim().toLowerCase()
-          let keyword = await tx.keyWords.findFirst({
-            where: {
-              name: {
-                equals: keywordName.trim(),
-                mode: 'insensitive',
-              },
+        const trimmedKeywords = body.newKeywords.map((k: string) => k.trim())
+        
+        // 批次查找已存在的關鍵字
+        const existingKeywords = await tx.keyWords.findMany({
+          where: {
+            name: {
+              in: trimmedKeywords,
+              mode: 'insensitive',
             },
-          })
+          },
+        })
 
-          if (!keyword) {
-            keyword = await tx.keyWords.create({
-              data: { name: keywordName.trim() },
-            })
-          }
-          allKeywordIds.push(keyword.id)
+        const existingKeywordMap = new Map(
+          existingKeywords.map(k => [k.name.toLowerCase(), k.id])
+        )
+
+        // 找出需要創建的新關鍵字
+        const keywordsToCreate = trimmedKeywords.filter(
+          (name: string) => !existingKeywordMap.has(name.toLowerCase())
+        )
+
+        // 批次創建新關鍵字
+        if (keywordsToCreate.length > 0) {
+          const createdKeywords = await Promise.all(
+            keywordsToCreate.map((name: string) =>
+              tx.keyWords.create({ data: { name } })
+            )
+          )
+          createdKeywords.forEach(k => existingKeywordMap.set(k.name.toLowerCase(), k.id))
         }
+
+        // 收集所有關鍵字 ID
+        trimmedKeywords.forEach((name: string) => {
+          const keywordId = existingKeywordMap.get(name.toLowerCase())
+          if (keywordId) {
+            allKeywordIds.push(keywordId)
+          }
+        })
       }
 
       // 3. 更新文章主體資料
@@ -201,6 +223,9 @@ export async function PATCH(
           },
         },
       })
+    }, {
+      maxWait: 10000, // 最長等待時間 10 秒
+      timeout: 15000, // 事務超時時間 15 秒
     })
 
     return NextResponse.json({
