@@ -73,13 +73,18 @@ function sameSet<T>(set1: Set<T>, set2: Set<T>): boolean {
  * 
  * 確保：
  * 1. 所有在 blocks 中使用的 reference markers 都有對應的 annotation
- * 2. 不會出現孤兒 annotation（沒有被任何 block 引用的 annotation）
  * 
- * @throws Error 如果發現不一致
+ * 注意：允許 annotations 存在但不被 block 引用（有些註解可能預備給未來使用）
+ * 
+ * @param blocks - 文章的 blocks
+ * @param annotations - 文章的 annotations
+ * @param options - 驗證選項
+ * @param options.allowOrphanAnnotations - 是否允許未被引用的 annotations（預設為 true）
  */
 export function validateReferenceIntegrity(
   blocks: Block[],
-  annotations: Annotation[]
+  annotations: Annotation[],
+  options: { allowOrphanAnnotations?: boolean } = { allowOrphanAnnotations: true }
 ): { valid: true } | { valid: false; errors: string[] } {
   const errors: string[] = []
   
@@ -96,10 +101,13 @@ export function validateReferenceIntegrity(
     }
   }
   
-  // 檢查是否有孤兒 annotations（沒有被引用的 annotation）
-  for (const annotationId of annotationIds) {
-    if (!usedRefs.has(annotationId)) {
-      errors.push(`Annotation with ID ${annotationId} exists but is not referenced in any block`)
+  // 可選：檢查是否有孤兒 annotations（沒有被引用的 annotation）
+  // 預設允許孤兒 annotations，因為有些註解可能預備給未來使用
+  if (!options.allowOrphanAnnotations) {
+    for (const annotationId of annotationIds) {
+      if (!usedRefs.has(annotationId)) {
+        errors.push(`Annotation with ID ${annotationId} exists but is not referenced in any block`)
+      }
     }
   }
   
@@ -113,12 +121,16 @@ export function validateReferenceIntegrity(
 /**
  * 嚴格版本：如果發現不一致直接拋出錯誤
  * 適合用於 API 層的驗證
+ * 
+ * @param options - 驗證選項
+ * @param options.allowOrphanAnnotations - 是否允許未被引用的 annotations（預設為 true）
  */
 export function assertReferenceIntegrity(
   blocks: Block[],
-  annotations: Annotation[]
+  annotations: Annotation[],
+  options: { allowOrphanAnnotations?: boolean } = { allowOrphanAnnotations: true }
 ): void {
-  const result = validateReferenceIntegrity(blocks, annotations)
+  const result = validateReferenceIntegrity(blocks, annotations, options)
   
   if (!result.valid) {
     throw new Error(
