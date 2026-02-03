@@ -714,7 +714,8 @@ export default function ArticleEditorPage() {
                   </span>
                 )}
               </label>
-              
+                            //skip,
+              //take: limit,
               {/* 新增關鍵字輸入框 */}
               <div className="relative mb-3">
                 <div className="flex gap-2">

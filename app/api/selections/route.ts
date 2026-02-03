@@ -115,10 +115,11 @@ export async function POST(request: NextRequest) {
                     // 連接所有 keywords（現有的 + 新創建的）
                     ...(allKeywordIds.length > 0 && {
                         keyWords: {
-                            create: allKeywordIds.map(keywordId => ({
+                            create: allKeywordIds.map((keywordId, index) => ({
                                 keyWord: {
                                     connect: { id: keywordId },
                                 },
+                                position: allKeywordIds.length - 1 - index, // 反向順序
                             })),
                         },
                     }),
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
                     videos: true,
                     podcasts: true,
                     keyWords: {
+                        orderBy: { position: 'desc' },
                         include: {
                             keyWord: true,
                         },
@@ -216,6 +218,7 @@ export async function GET(request: NextRequest) {
                     videos: true,
                     podcasts: true,
                     keyWords: {
+                        orderBy: { position: 'desc' },
                         include: {
                             keyWord: true,
                         },

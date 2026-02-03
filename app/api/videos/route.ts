@@ -73,8 +73,9 @@ export async function POST(request: Request) {
         author,
         videoDate: new Date(videoDate),
         keyWords: {
-          create: allKeyWordIds.map((keyWordId: string) => ({
+          create: allKeyWordIds.map((keyWordId: string, index: number) => ({
             keyWord: { connect: { id: keyWordId } },
+            position: allKeyWordIds.length - 1 - index, // 反向順序
           })),
         },
         nineBlocks: {
@@ -132,6 +133,7 @@ export async function GET() {
     const videos = await prisma.video.findMany({
       include: {
         keyWords: {
+          orderBy: { position: 'desc' },
           include: {
             keyWord: true,
           },

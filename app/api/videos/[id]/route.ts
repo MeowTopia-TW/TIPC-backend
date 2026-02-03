@@ -15,6 +15,7 @@ export async function GET(
       where: { id },
       include: {
         keyWords: {
+          orderBy: { position: 'desc' },
           include: {
             keyWord: true,
           },
@@ -189,8 +190,9 @@ export async function PUT(
         // 刪除舊的關聯並建立新的
         keyWords: {
           deleteMany: {},
-          create: allKeyWordIds.map((keyWordId: string) => ({
+          create: allKeyWordIds.map((keyWordId: string, index: number) => ({
             keyWord: { connect: { id: keyWordId } },
+            position: allKeyWordIds.length - 1 - index, // 反向順序
           })),
         },
         nineBlocks: {
@@ -208,6 +210,7 @@ export async function PUT(
       },
       include: {
         keyWords: {
+          orderBy: { position: 'desc' },
           include: {
             keyWord: true,
           },

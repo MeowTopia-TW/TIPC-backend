@@ -145,6 +145,7 @@ model PhotographCakeCategory {
 model VideoKeyWord {
   videoId   String
   keyWordId String
+  position  Int      @default(0)
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   keyWord   KeyWords @relation(fields: [keyWordId], references: [id], onDelete: Cascade)
 
@@ -287,6 +288,7 @@ model ArticlePodcast {
 model SelectionKeyWord {
   selectionId String
   keyWordId   String
+  position    Int       @default(0)
   selection   Selection @relation(fields: [selectionId], references: [id], onDelete: Cascade)
   keyWord     KeyWords  @relation(fields: [keyWordId], references: [id], onDelete: Cascade)
 
