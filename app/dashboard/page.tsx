@@ -543,6 +543,7 @@ export default function DashboardPage() {
                 <option value="article">觀點文章</option>
                 <option value="photograph">光影故事</option>
                 <option value="video">TIPC影音</option>
+                <option value="selection">影響力精選</option>
                 <option value="archive">典藏索引</option>
                 <option value="partner">友善夥伴</option>
                 <option value="book">TIPC選書</option>
